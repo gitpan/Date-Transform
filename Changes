@@ -1,4 +1,4 @@
-Revision history for Perl extension Date::Manip::Transform.
+Revision history for Perl extension Date::Transform.
 
 0.01  Thu Sep 12 16:52:00 2002
 	- original version; created by h2xs 1.21 with options
@@ -8,4 +8,5 @@ Revision history for Perl extension Date::Manip::Transform.
 	- first distribution
 
 0.06	Tue Apr 15 12:00:00 2003
-	- Added Constants.pm
+	+ Added Constants.pm
+	+ Fixed Documentation

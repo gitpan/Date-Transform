@@ -3,7 +3,7 @@
 
 #########################
 
-use lib '/Documents and Settings/Christopher Brown/Desktop/CPAN';
+use lib '/Documents and Settings/Christopher Brown/Desktop/CPAN/Date/Lib';
 use Test::Simple tests=>3;
 use Date::Transform;
 

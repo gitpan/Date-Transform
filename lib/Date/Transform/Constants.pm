@@ -1,6 +1,5 @@
 package Date::Transform::Constants;
-## Data::Table::Pivot::Constants -- Verision 0.02
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use strict;
 

@@ -25,7 +25,7 @@ our %EXPORT_TAGS =
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT    = qw( mk_set_filter_input mk_passthru mk_function );
 
-our $VERSION = '0.05';
+our $VERSION = '0.07';
 
 ## SUBROUTINE: mk_set_filter_input
 ##  Generates a function that sets the key of Tie::IxHash

@@ -41,7 +41,7 @@ our @EXPORT = qw( 	iI_p_to_strftime_H
   B_to_strftime_m
   m_to_strftime_m );
 
-our $VERSION = '0.05';
+our $VERSION = '0.07';
 
 # Preloaded methods go here.
 

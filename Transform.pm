@@ -39,7 +39,7 @@ our %EXPORT_TAGS = ( 'all' => [qw()] );
 our @EXPORT_OK   = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT      = qw( @CONSTANTS );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 # Preloaded methods go here.
 
