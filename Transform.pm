@@ -17,7 +17,7 @@ use Carp;
 # use Data::Dumper;
 # use Benchmark qw(:all);
 use Switch 'Perl5', 'Perl6';
-use Tie::IXHash;
+use Tie::IxHash;
 use POSIX qw(strftime);
 
 use Date::Transform::Closures;      # Functions that create the closures.
@@ -41,7 +41,7 @@ our %EXPORT_TAGS = ( 'all' => [qw()] );
 our @EXPORT_OK   = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT      = qw( @CONSTANTS );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 # Preloaded methods go here.
 

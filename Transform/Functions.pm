@@ -7,7 +7,7 @@ use strict;
 use warnings;
 use Carp;
 use Switch 'Perl6';
-use Tie::IXHash;
+use Tie::IxHash;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -41,7 +41,7 @@ our @EXPORT = qw( 	iI_p_to_strftime_H
   B_to_strftime_m
   m_to_strftime_m );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 # Preloaded methods go here.
 

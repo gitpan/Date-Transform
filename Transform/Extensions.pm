@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-use Tie::IXHash;
+use Tie::IxHash;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -28,7 +28,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =
   qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex);
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 # Preloaded methods go here.
 

@@ -7,7 +7,7 @@ use strict;
 use warnings;
 use Carp;
 use Switch 'Perl6';
-use Tie::IXHash;
+use Tie::IxHash;
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
@@ -25,7 +25,7 @@ our %EXPORT_TAGS =
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT    = qw( mk_set_filter_input mk_passthru mk_function );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 ## SUBROUTINE: mk_set_filter_input
 ##  Generates a function that sets the key of Tie::IxHash
