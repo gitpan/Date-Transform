@@ -1,4 +1,4 @@
-package Date::Transform;
+package Date::Transform::Functions;
 ## SHOULD THIS BE ITS OWN PACKAGE SPACE
 ## NO.  These are not methods but functions.
 
@@ -35,13 +35,15 @@ our %EXPORT_TAGS = (
 
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our @EXPORT = qw( 	iI_p_to_strftime_H
+our @EXPORT = qw(
+  iI_p_to_strftime_H
   Y_to_strftime_y
   bh_to_strftime_m
   B_to_strftime_m
-  m_to_strftime_m );
+  m_to_strftime_m
+);
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 # Preloaded methods go here.
 

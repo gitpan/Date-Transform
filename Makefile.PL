@@ -7,7 +7,7 @@ WriteMakefile(
     'VERSION_FROM' => 'Transform.pm',      # finds $VERSION
     'PREREQ_PM'    => {
         Switch      	=> 0,
-        Tie::IXHash 	=> 0,
+        Tie::IxHash 	=> 0,
         POSIX       	=> 0
     },                                     # e.g., Module::Name => 1.1
     (
@@ -15,7 +15,7 @@ WriteMakefile(
         ?    ## Add these new keywords supported since 5.005
           (
             ABSTRACT_FROM => 'Transform.pm',    # retrieve abstract from module
-            AUTHOR => 'Christopher Brown <chris.brown@cal.berkeley.edu>'
+            AUTHOR => 'Christopher Brown <chris.brown -at- cal.berkeley.edu>'
           )
         : ()
     ),

@@ -41,7 +41,7 @@ our %EXPORT_TAGS = ( 'all' => [qw()] );
 our @EXPORT_OK   = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT      = qw( @CONSTANTS );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 # Preloaded methods go here.
 
@@ -332,8 +332,6 @@ sub _transform_functions {
 
 }
 
-
-
 ## SUBROUTINE: _regexp
 ## 	Creates the regexp used in the transformation
 sub _regexp {
@@ -387,7 +385,9 @@ sub _crosscheck {
     foreach my $or ( sort keys %or ) {
 
         if ( !$is{$or} ) {
-            carp "WARNING: %$or is required by the output, but not supplied by the input.\n";
+            carp
+"WARNING: %$or is required by the output, but not supplied by the input.\n";
+
             # die("\n") unless ( $is{$or} );
         }
 
@@ -471,25 +471,25 @@ sub _expand_compound_formats {
 
                 # COMPUND FORMATS
 
-                when [ "T", "X" ] 	{ $expansion = "%H:%M:%S"; }
-                when "c" 				{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-                when [ "C", "u" ] 	{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-                when "g" 				{ $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
-                when [ "D", "x" ] 	{ $expansion = "%m/%d/%y"; }
+                when [ "T", "X" ] { $expansion = "%H:%M:%S"; }
+                when "c" { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when [ "C", "u" ] { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when "g" { $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
+                when [ "D", "x" ] { $expansion = "%m/%d/%y"; }
 
-                when "r" 				{ $expansion = "%I:%M:%S %p"; }
-                when "R" 				{ $expansion = "%H:%M"; }
-                when "V" 				{ $expansion = "%m%d%H%M%y"; }
-                when "Q" 				{ $expansion = "%Y%m%d"; }
-                when "q" 				{ $expansion = "%Y%m%d%H%M%S"; }
-                when "P" 				{ $expansion = "%Y%m%d%H:%M:%S"; }
-                when "F" 				{ $expansion = "%A, %B %e, %Y"; }
-                when "J" 				{ $expansion = "%G-%W-%w"; }
-                when "K" 				{ $expansion = "%Y-%j"; }
+                when "r" { $expansion = "%I:%M:%S %p"; }
+                when "R" { $expansion = "%H:%M"; }
+                when "V" { $expansion = "%m%d%H%M%y"; }
+                when "Q" { $expansion = "%Y%m%d"; }
+                when "q" { $expansion = "%Y%m%d%H%M%S"; }
+                when "P" { $expansion = "%Y%m%d%H:%M:%S"; }
+                when "F" { $expansion = "%A, %B %e, %Y"; }
+                when "J" { $expansion = "%G-%W-%w"; }
+                when "K" { $expansion = "%Y-%j"; }
 
-			# when ""	{ $re = '' } # MORE.
-			# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
-			# Omitted for now, but logic can be included to solve the problem.
+# when ""	{ $re = '' } # MORE.
+# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
+# Omitted for now, but logic can be included to solve the problem.
 
                 # Don't expand non compound factors
                 else { $expansion .= $r2 . $r1; }
@@ -498,7 +498,8 @@ sub _expand_compound_formats {
 
             $r1 = chop($format);
 
-        } else {
+        }
+        else {
 
             $expansion = $r2;
 
@@ -534,8 +535,9 @@ sub _strftime_requirements {
             when [ "m", "f", "b", "h", "B" ] { push ( @req, 'm' ); }
 
             # Week/Day of the year, Day of the week
-            when [ "U", "W", "j", "v", "a", "A", "w" ]
-				{ push ( @req, 'Y', 'm', 'd' );}
+            when [ "U", "W", "j", "v", "a", "A", "w" ] {
+                push ( @req, 'Y', 'm', 'd' );
+            }
 
             # Day of the Month
             when [ "d", "e", "E" ] { push ( @req, 'd' ); }
@@ -576,32 +578,39 @@ sub _re {
     given($format) {
 
         # YEAR
-        when "y" 						{ $re = '\d{2}'; }
-        when [ "Y", "G", "L" ] 	{ $re = '\d{4}'; }
+        when "y" { $re = '\d{2}'; }
+        when [ "Y", "G", "L" ] { $re = '\d{4}'; }
 
         #Month
-        when "m" 					{ $re = '[01]\d'; }
-        when "f" 						{ $re = '\d{1}|1[0-2]'; }
-        when [ "b", "h" ] 			{ $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';}
-        when "B" 						{ $re = 'January|February|March|April|May|June|July|August|September|October|November|December';}
-        when [ "U", "W" ] 		{ $re = '[0-5]\d'; }
+        when "m" { $re = '[01]\d'; }
+        when "f" { $re = '\d{1}|1[0-2]'; }
+        when [ "b", "h" ] {
+            $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+        }
+        when "B" {
+            $re =
+'January|February|March|April|May|June|July|August|September|October|November|December';
+        }
+        when [ "U", "W" ] { $re = '[0-5]\d'; }
 
         # Day
-        when "j" 						{ $re = '[0-3]\d{2}'; }
-        when "d" 						{ $re = '[0-3]\d'; }
-        when "e" 						{ $re = '[ |0|1|2|3]\d'; }
-        when "v" 						{ $re = ' S| M| T| W|Th|F|Sa'; }
-        when "a" 						{ $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
-        when "A"						{ $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday';}
-        when "w" 						{ $re = '1-7'; }
-        when "E" 						{ $re = '\d{1,2}st|nd|rd|th'; }
+        when "j" { $re = '[0-3]\d{2}'; }
+        when "d" { $re = '[0-3]\d'; }
+        when "e" { $re = '[ |0|1|2|3]\d'; }
+        when "v" { $re = ' S| M| T| W|Th|F|Sa'; }
+        when "a" { $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
+        when "A" {
+            $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday';
+        }
+        when "w" { $re = '1-7'; }
+        when "E" { $re = '\d{1,2}st|nd|rd|th'; }
 
         # Hours
-        when "H" 		{ $re = '[0-2]\d'; }
-        when "k" 		{ $re = '[ 12]\d'; }
-        when "i" 		{ $re = '[ 1]\d'; }
-        when "I" 		{ $re = '[01]\d'; }
-        when "p" 		{ $re = 'AM|PM'; }
+        when "H" { $re = '[0-2]\d'; }
+        when "k" { $re = '[ 12]\d'; }
+        when "i" { $re = '[ 1]\d'; }
+        when "I" { $re = '[01]\d'; }
+        when "p" { $re = 'AM|PM'; }
 
         when [ "M", "S" ] { $re = '[0-6]\d'; }
 

@@ -28,7 +28,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =
   qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex);
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 # Preloaded methods go here.
 

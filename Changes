@@ -17,3 +17,6 @@ Revision history for Perl extension Date::Transform.
 
 0.10 Tue Dec 09 12:00:00 2003
 	+ Fixed case on use statement to 'use IxHash;'
+
+0.11 Tue Dec 23 20:20:01 2003
+	+ Fixed package statements in Date::Transform::x

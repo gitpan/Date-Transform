@@ -1,6 +1,4 @@
 package Date::Transform::Closures;
-## SHOULD THIS BE ITS OWN PACKAGE SPACE
-## NO.  These are not methods but functions.
 
 use 5.006;
 use strict;
@@ -25,7 +23,7 @@ our %EXPORT_TAGS =
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT    = qw( mk_set_filter_input mk_passthru mk_function );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 ## SUBROUTINE: mk_set_filter_input
 ##  Generates a function that sets the key of Tie::IxHash
