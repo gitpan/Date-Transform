@@ -1,0 +1,8 @@
+Revision history for Perl extension Date::Manip::Transform.
+
+0.01  Thu Sep 12 16:52:00 2002
+	- original version; created by h2xs 1.21 with options
+		-Xs -n Date::Transform
+ 
+0.05	 Thu Mar 12 12:00:00 2003
+	- first distribution
