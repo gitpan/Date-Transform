@@ -1,6 +1,7 @@
 package Date::Transform::Constants;
-our $VERSION = '0.07';
+our $VERSION = '0.09';
 
+use 5.006;
 use strict;
 
 require Exporter;

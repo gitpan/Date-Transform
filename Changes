@@ -10,3 +10,7 @@ Revision history for Perl extension Date::Transform.
 0.06	Tue Apr 15 12:00:00 2003
 	+ Added Constants.pm
 	+ Fixed Documentation
+
+0.09 Thu Jul 10 12:00:00 2003
+	+ Fixed Documentation
+	+ Fixed t\1.t

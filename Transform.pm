@@ -7,6 +7,8 @@ package Date::Transform;
 #	+ filter
 #	+ destination
 
+# use lib 'C:/Documents and Settings/Christopher Brown/Desktop/CPAN';
+
 use 5.006;
 use strict;
 use warnings;
@@ -14,7 +16,7 @@ use Carp;
 
 # use Data::Dumper;
 # use Benchmark qw(:all);
-use Switch 'Perl6';
+use Switch 'Perl5', 'Perl6';
 use Tie::IXHash;
 use POSIX qw(strftime);
 
@@ -39,7 +41,7 @@ our %EXPORT_TAGS = ( 'all' => [qw()] );
 our @EXPORT_OK   = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT      = qw( @CONSTANTS );
 
-our $VERSION = '0.07';
+our $VERSION = '0.09';
 
 # Preloaded methods go here.
 
@@ -326,19 +328,17 @@ sub _transform_functions {
 
     }
 
-    ## 6. Wday
-    ## 7. Yearday
-    ## 8. ISDST is daylight savings time.
-
     return 1;
 
 }
+
+
 
 ## SUBROUTINE: _regexp
 ## 	Creates the regexp used in the transformation
 sub _regexp {
 
-    # Converts input format into regular expression format.
+    ## Converts input format into regular expression format.
     my $self = shift;
 
     my $regexp = $self->{source}->{expanded_format};
@@ -387,9 +387,7 @@ sub _crosscheck {
     foreach my $or ( sort keys %or ) {
 
         if ( !$is{$or} ) {
-            carp
-"WARNING: %$or is required by the output, but not supplied by the input.\n";
-
+            carp "WARNING: %$or is required by the output, but not supplied by the input.\n";
             # die("\n") unless ( $is{$or} );
         }
 
@@ -473,25 +471,25 @@ sub _expand_compound_formats {
 
                 # COMPUND FORMATS
 
-                when [ "T", "X" ] { $expansion = "%H:%M:%S"; }
-                when "c" { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-                when [ "C", "u" ] { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-                when "g" { $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
-                when [ "D", "x" ] { $expansion = "%m/%d/%y"; }
+                when [ "T", "X" ] 	{ $expansion = "%H:%M:%S"; }
+                when "c" 				{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when [ "C", "u" ] 	{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when "g" 				{ $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
+                when [ "D", "x" ] 	{ $expansion = "%m/%d/%y"; }
 
-                when "r" { $expansion = "%I:%M:%S %p"; }
-                when "R" { $expansion = "%H:%M"; }
-                when "V" { $expansion = "%m%d%H%M%y"; }
-                when "Q" { $expansion = "%Y%m%d"; }
-                when "q" { $expansion = "%Y%m%d%H%M%S"; }
-                when "P" { $expansion = "%Y%m%d%H:%M:%S"; }
-                when "F" { $expansion = "%A, %B %e, %Y"; }
-                when "J" { $expansion = "%G-%W-%w"; }
-                when "K" { $expansion = "%Y-%j"; }
+                when "r" 				{ $expansion = "%I:%M:%S %p"; }
+                when "R" 				{ $expansion = "%H:%M"; }
+                when "V" 				{ $expansion = "%m%d%H%M%y"; }
+                when "Q" 				{ $expansion = "%Y%m%d"; }
+                when "q" 				{ $expansion = "%Y%m%d%H%M%S"; }
+                when "P" 				{ $expansion = "%Y%m%d%H:%M:%S"; }
+                when "F" 				{ $expansion = "%A, %B %e, %Y"; }
+                when "J" 				{ $expansion = "%G-%W-%w"; }
+                when "K" 				{ $expansion = "%Y-%j"; }
 
-# when ""	{ $re = '' } # MORE.
-# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
-# Omitted for now, but logic can be included to solve the problem.
+			# when ""	{ $re = '' } # MORE.
+			# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
+			# Omitted for now, but logic can be included to solve the problem.
 
                 # Don't expand non compound factors
                 else { $expansion .= $r2 . $r1; }
@@ -500,8 +498,7 @@ sub _expand_compound_formats {
 
             $r1 = chop($format);
 
-        }
-        else {
+        } else {
 
             $expansion = $r2;
 
@@ -537,9 +534,8 @@ sub _strftime_requirements {
             when [ "m", "f", "b", "h", "B" ] { push ( @req, 'm' ); }
 
             # Week/Day of the year, Day of the week
-            when [ "U", "W", "j", "v", "a", "A", "w" ] {
-                push ( @req, 'Y', 'm', 'd' );
-            }
+            when [ "U", "W", "j", "v", "a", "A", "w" ]
+				{ push ( @req, 'Y', 'm', 'd' );}
 
             # Day of the Month
             when [ "d", "e", "E" ] { push ( @req, 'd' ); }
@@ -580,39 +576,32 @@ sub _re {
     given($format) {
 
         # YEAR
-        when "y" { $re = '\d{2}'; }
-        when [ "Y", "G", "L" ] { $re = '\d{4}'; }
+        when "y" 						{ $re = '\d{2}'; }
+        when [ "Y", "G", "L" ] 	{ $re = '\d{4}'; }
 
         #Month
-        when "m" { $re = '[01]\d'; }
-        when "f" { $re = '\d{1}|1[0-2]'; }
-        when [ "b", "h" ] {
-            $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
-        }
-        when "B" {
-            $re =
-'January|February|March|April|May|June|July|August|September|October|November|December';
-        }
-        when [ "U", "W" ] { $re = '[0-5]\d'; }
+        when "m" 					{ $re = '[01]\d'; }
+        when "f" 						{ $re = '\d{1}|1[0-2]'; }
+        when [ "b", "h" ] 			{ $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';}
+        when "B" 						{ $re = 'January|February|March|April|May|June|July|August|September|October|November|December';}
+        when [ "U", "W" ] 		{ $re = '[0-5]\d'; }
 
         # Day
-        when "j" { $re = '[0-3]\d{2}'; }
-        when "d" { $re = '[0-3]\d'; }
-        when "e" { $re = '[ |0|1|2|3]\d'; }
-        when "v" { $re = ' S| M| T| W|Th|F|Sa'; }
-        when "a" { $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
-        when "A" {
-            $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday';
-        }
-        when "w" { $re = '1-7'; }
-        when "E" { $re = '\d{1,2}st|nd|rd|th'; }
+        when "j" 						{ $re = '[0-3]\d{2}'; }
+        when "d" 						{ $re = '[0-3]\d'; }
+        when "e" 						{ $re = '[ |0|1|2|3]\d'; }
+        when "v" 						{ $re = ' S| M| T| W|Th|F|Sa'; }
+        when "a" 						{ $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
+        when "A"						{ $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday';}
+        when "w" 						{ $re = '1-7'; }
+        when "E" 						{ $re = '\d{1,2}st|nd|rd|th'; }
 
         # Hours
-        when "H" { $re = '[0-2]\d'; }
-        when "k" { $re = '[ 12]\d'; }
-        when "i" { $re = '[ 1]\d'; }
-        when "I" { $re = '[01]\d' }
-        when "p" { $re = 'AM|PM'; }
+        when "H" 		{ $re = '[0-2]\d'; }
+        when "k" 		{ $re = '[ 12]\d'; }
+        when "i" 		{ $re = '[ 1]\d'; }
+        when "I" 		{ $re = '[01]\d'; }
+        when "p" 		{ $re = 'AM|PM'; }
 
         when [ "M", "S" ] { $re = '[0-6]\d'; }
 
@@ -632,9 +621,11 @@ __END__;
 
 # Below is stub documentation for your module. You better edit it!
 
+=pod
+
 =head1 NAME
 
-Date::Transform - Efficiently transform between date formats.
+Date::Transform - Efficiently transform dates.
 
 =head1 SYNOPSIS
 
@@ -657,66 +648,53 @@ Date::Transform - Efficiently transform between date formats.
 
 =head1 DESCRIPTION
 
-Sullivan Beck's excelllent Date::Manip it a superlative module for performing 
-operations involving dates.  However, because of its extraordinary 
-flexibility it is slow when much date parsing is needed.  
+Sullivan Beck's L<Date::Manip|Date::Manip> is an excellent module for performing 
+operations involving dates.  However, because of its extraordinary flexibility, 
+it is slow when much date parsing is needed.  
 
 I found that more than 95% of my operations using dates required repeated 
-transformations, e.g. going from YYYY-mm-dd to mm/dd/YYYY.  While Date::Manip's 
-UnixDate function can do this, its flexibility means slower operation.  
+operations of going from YYYY-mm-dd to mm/dd/YYYY.  This occurs often
+when changing an array or column of dates from one format to another.  While 
+L<Date::Manip|Date::Manip> C<UnixDate> function can do this, its flexibility nature causes it to be slower than
+often needed.  
 
-When the input format is specified, the transformation can be greatly enhanced.
-Date::Transform provides this by creating a custom algorithm maximized for the 
-specific transformation.
-
-While a considerable initialization is required to derive the transformations, the
-transformations themselves show a 300-500% performance increase over
-Date::Manip.  
+When the input format is specified beforehand, parsing of the input date becomes much
+easier and the speed of the transformation can be greatly enhanced.  B<Date::Transform> 
+provides this by writing a custom algorithm maximized to the specific operation.  
+While a considerable initialization is required to creation the transformation code,
+the resultant transformation are typically 300-500% faster than C<UnixDate>.  
 
 =head1 METHODS
 
-=head2 new
+=over 4
 
-  new( $input_format, $output_format )
+=item new( $input_format, $output_format )
+
+Creates a new B<Date::Manip::Transform> object and initializes the C<transform> function.
+
+C<$input_format> is treated as a regular expression for matching. Thus,  
+
+new('%b %d, %Y', '%Y-%m-%d') matches and transforms:
  
-  Creates a new Date::Manip::Transform object.
+'I came to California on Oct 15, 1992' ==> 'I came to California on 1992-10-15.
 
-  * $input_format is treated as a regular expression for matching the date to be transformed.  Thus
-    '%b %d, %Y'  would succesfully transform the string, 'I came to California on Oct 15, 1992'.
 
-  * See 'Supported Formats' for details on the supported format types.
+See L<"SUPPORTED FORMATS"> for details on the supported format types.
 
-  * All formats must be proceeded by '%'.
+All formats must be proceeded by C<%>.
 
-=head2 transform
+=item transform( $date )
 
-  transform( $date )
+Transforms supplied C<$date> value in the $input_format to the C<$output_format> as 
+specified when the Date::Transform object was created.
 
-  Returns a scalar of the supplied date in the format specified by the at object creation.
-
+=back
 
 =head1 SUPPORTED FORMATS
 
-  a	weekday abbreviation                  Sun to Sat
-  A	Day of the Week                       Monday
-  b	Month abbreviation                    Jan to Dec
-  B	Month of the Year                     January ... December
-  c	Compound time format                  e.g. Fri Apr 28 17:23:15 1995
-  d	Day of the Month,                     e.g. 15
-  H	Hour of the day                       00-23
-  I	Hour of the day                       01 to 12
-  j	Day of the year                       0-365
-  m	month of year                         01 to 12
-  M	Minute                                00 to 59
-  p	AM or PM                              AM or PM
-  S	Second                                00 to 59
-  U	Week of year, Sunday as first day     01 to 53
-  w	Day of week                           1 (Monday) to 7 (Sunday)
-  W	Week of year, Monday as first day     01 to 53
-  x	Compound format                       e.g. 04/28/95
-  X	Time                                  e.g. 03:30:01 AM
-  Y	Year                                  e.g. 2002
-  Z	Time Zone                             e.g. Pacific Daylight Time
+ %[A a B b c d H I J M m p S U w W x X Y Z]
+
+Please see L<Date::Manip/"UnixDate"> or L<Posix>.
 
 =head1 NOTES
 
@@ -732,20 +710,23 @@ None by default.
   + Implement a default using user parameters or localtime()
   + Multiple language support.
   + Incoporate %l format.
+  + Allow specification of whether the date is to be replaced or simple extracted and transformed.
+  + Specify Date Constants
 
 =head1 AUTHOR
 
-Christopher Brown, E<lt>chris.brown@cal.berkeley.eduE<gt>
+Christopher Brown, L<chris.brown@cal.berkeley.edu>
+
+=head1 COPYRIGHT
+
+Copyright (c) 2003 Christopher T. Brown.
 
 =head1 SEE ALSO
 
 L<perl>, 
 L<Date::Manip>, 
 L<Switch>, 
-L<Posix::strftime>
+L<Posix>
 
-=head1 COPYRIGHT
-
-Copyright (c) 2003 Christopher T. Brown.
 
 =cut

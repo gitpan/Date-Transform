@@ -1,6 +1,6 @@
 package Date::Transform::Extensions;
 
-use 5.008;
+use 5.006;
 use strict;
 use warnings;
 use Carp;
@@ -28,7 +28,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT =
   qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex);
 
-our $VERSION = '0.05';
+our $VERSION = '0.09';
 
 # Preloaded methods go here.
 
