@@ -20,12 +20,12 @@ our @ISA = qw(  Exporter );
 # This allows declaration	use Date::Transform ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw( mk_set_filter_input mk_passthru mk_function) ] );
+our %EXPORT_TAGS =
+  ( 'all' => [qw( mk_set_filter_input mk_passthru mk_function)] );
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-our @EXPORT = qw( mk_set_filter_input mk_passthru mk_function );
+our @EXPORT    = qw( mk_set_filter_input mk_passthru mk_function );
 
 our $VERSION = '0.05';
-
 
 ## SUBROUTINE: mk_set_filter_input
 ##  Generates a function that sets the key of Tie::IxHash
@@ -36,21 +36,21 @@ our $VERSION = '0.05';
 ##
 sub mk_set_filter_input {
 
-	my $key = shift;
-	my $function = shift;	
+    my $key      = shift;
+    my $function = shift;
 
-	my $new_function =
+    my $new_function =
 
-		sub {
+      sub {
 
-			my $self = shift;
-			$self->{filter}->{input}->STORE( $key, $self->{filter}->{matches}->$function ); 		
+        my $self = shift;
+        $self->{filter}->{input}
+          ->STORE( $key, $self->{filter}->{matches}->$function );
 
-		};
+      };
 
-	return $new_function;
-}		
-
+    return $new_function;
+}
 
 ## SUBROUTINE: mk_passthrough
 ## Generates a function that returns the value of the Tie::IxHash
@@ -62,21 +62,20 @@ sub mk_set_filter_input {
 ##				Tie::IxHash_obj->$fn
 sub mk_passthru {
 
-	my $key = shift;
-	carp( "No key provided for passthru\n" ) if ( ! defined $key );
+    my $key = shift;
+    carp("No key provided for passthru\n") if ( !defined $key );
 
-	my $function = sub {
+    my $function = sub {
 
-		my $self = shift;
-		my $value = $self->FETCH( $key );
+        my $self  = shift;
+        my $value = $self->FETCH($key);
 
-		return $value;
-		
-	};
+        return $value;
 
-	return $function;
+    };
+
+    return $function;
 }
-
 
 ## SUBROUTINE: mk_function
 ## 	returns a closure that applies $function to the value(s)
@@ -86,28 +85,24 @@ sub mk_passthru {
 ##
 sub mk_function {
 
-	my $function = shift;	
-	my @keys= @_;
+    my $function = shift;
+    my @keys     = @_;
 
-	## print "@keys\n";
-	
-	my $new_function = sub {
+    ## print "@keys\n";
 
-		my $matches = shift;
-		my @inputs = map { $matches->FETCH($_) } @keys;
-		
-		return &$function(@inputs);
+    my $new_function = sub {
 
-	};
+        my $matches = shift;
+        my @inputs  = map { $matches->FETCH($_) } @keys;
 
-	return $new_function;	
-	
-} # END SUBROUTINE: mk_function
+        return &$function(@inputs);
 
+    };
 
+    return $new_function;
 
+}    # END SUBROUTINE: mk_function
 
 1;
-
 
 __END__;

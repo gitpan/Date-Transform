@@ -12,13 +12,13 @@ use Date::Transform;
 # use Benchmark qw(:all);
 
 #########################
-# TESTS 
+# TESTS
+
 
 ok( 1, "Everything fine so far."); # If we made it this far, we're ok.
 
 my $output = "Fri Friday Jul July Fri Jul  23:15:55 Pacific Daylight Time 1982 02 23 11 183 07 15 PM 55 26 5 26 07/02/82 23:15:55 82 1982 Pacific Daylight Time";
 # 					  '%a %A   %b %B %c                                                             %d%H%I  %j %m%M%p%S%U%w%W%x     %X           %y %Y %Z'
-
 
 
 

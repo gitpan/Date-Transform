@@ -8,6 +8,7 @@ t/1.t
 lib/Date/Transform/Closures.pm
 lib/Date/Transform/Extensions.pm
 lib/Date/Transform/Functions.pm
+lib/Date/Transform/Constants.pm
 
 docs/todo.txt
 docs/formats.txt

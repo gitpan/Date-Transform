@@ -1,5 +1,12 @@
 package Date::Transform;
 
+# Object Model
+#
+#	transform
+#	+ source
+#	+ filter
+#	+ destination
+
 use 5.006;
 use strict;
 use warnings;
@@ -11,17 +18,14 @@ use Switch 'Perl6';
 use Tie::IXHash;
 use POSIX qw(strftime);
 
-
-use Date::Transform::Closures; 	# Functions that create the closures.
-use Date::Transform::Functions;  # Functions used in the closures
-use Date::Transform::Extensions; # Contains Extensions to Other Modules
-
-
-
+use Date::Transform::Closures;      # Functions that create the closures.
+use Date::Transform::Functions;     # Functions used in the closures
+use Date::Transform::Extensions;    # Contains Extensions to Other Modules
+use Date::Transform::Constants;     # Contains Constant Definitions
 
 require Exporter;
 use AutoLoader qw(AUTOLOAD);
-our @ISA = qw();
+our @ISA = qw(Exporter);
 
 # Items to export into callers namespace by default. Note: do not export
 # names by default without a very good reason. Use EXPORT_OK instead.
@@ -31,378 +35,367 @@ our @ISA = qw();
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
 
+our %EXPORT_TAGS = ( 'all' => [qw()] );
+our @EXPORT_OK   = ( @{ $EXPORT_TAGS{'all'} } );
+our @EXPORT      = qw( @CONSTANTS );
 
-our %EXPORT_TAGS = ( 'all' => [ qw() ] );
-our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
-our @EXPORT = qw();
-
-our $VERSION = '0.05';
-
+our $VERSION = '0.06';
 
 # Preloaded methods go here.
 
 sub new {
 
-	my $type  = shift;
-	my $class = ref($type) || $type;
-	my $self;
+    my $type = shift;
+    my $class = ref($type) || $type;
+    my $self;
 
-	# Arguments
-	 
-	if ( scalar(@_) < 2) { 	  # Make sure that both arguments are given.
-		carp("Both an input and an output arguments must be supplied.\n");
-		die;
-	}
+    # Arguments
 
-	$self->{source}->{format}  = shift;
-	$self->{destination}->{format} = shift;
-	
-	# Bless and return the object.
-	bless $self, $class;
+    if ( scalar(@_) < 2 ) {    # Make sure that both arguments are given.
+        carp("Both an input and an output arguments must be supplied.\n");
+        die;
+    }
 
-	$self->_initialize();
-	
-	return $self;
+    $self->{source}->{format}      = shift;
+    $self->{destination}->{format} = shift;
+
+    # Bless and return the object.
+    bless $self, $class;
+
+    $self->_initialize();
+
+    return $self;
 
 }
-
 
 ## SUBROUTINE: _initialize
 ##  Creates Transformation Function
 sub _initialize {
-	
-	my $self = shift;
 
-	# Expand Input & Output Formats
-	#  From here on out we should deal exclusively with expanded formats.
-	$self->{source}->{expanded_format}	= _expand_compound_formats( $self->{source}->{format} );
-	$self->{destination}->{expanded_format}	= _expand_compound_formats( $self->{destination}->{format} );
+    my $self = shift;
 
-	## We can check the expanded output format for validity by making sure that none of the %_ are
-	## other than those acceptable to strftime function.  We can raise an error if they are detected.
-	## 
- 
-	## CREATE PLACE for POSIX ARRAY OF DATE
-	## sec, min, hour, mday, mon, year, wday
-	## {filter} will be the array passed to Posix::strftime
-	my $ixhash_obj = Tie::IxHash->new();
-	$ixhash_obj->STORE( 'format', $self->{destination}->{expanded_format} );
-	$self->{filter}->{input} = $ixhash_obj;
+    # Expand Input & Output Formats
+    #  From here on out we should deal exclusively with expanded formats.
+    $self->{source}->{expanded_format} =
+      _expand_compound_formats( $self->{source}->{format} );
+    $self->{destination}->{expanded_format} =
+      _expand_compound_formats( $self->{destination}->{format} );
 
-	# Generate records of the formats and orders.
-	# Retrieve input formats and order of formats.
-	$self->{source}->{formats}       = _parse_format_string( $self->{source}->{expanded_format} );
-	$self->{destination}->{formats} = _parse_format_string( $self->{destination}->{expanded_format} );
+    ## We can check the expanded output format for validity by making sure that none of the %_ are
+    ## other than those acceptable to strftime function.  We can raise an error if they are detected.
+    ##
 
-	$self->_crosscheck; 		# Does the input data supply everything for necessary for the output.
-	$self->_regexp;				# Create regexp for matching.
-	$self->_transform_functions; # Create functions for mapping.
+    ## CREATE PLACE for POSIX ARRAY OF DATE
+    ## sec, min, hour, mday, mon, year, wday
+    ## {filter} will be the array passed to Posix::strftime
+    my $ixhash_obj = Tie::IxHash->new();
+    $ixhash_obj->STORE( 'format', $self->{destination}->{expanded_format} );
+    $self->{filter}->{input} = $ixhash_obj;
 
-} # END SUBROUTINE: _initialize
+    # Generate records of the formats and orders.
+    # Retrieve input formats and order of formats.
+    $self->{source}->{formats} =
+      _parse_format_string( $self->{source}->{expanded_format} );
+    $self->{destination}->{formats} =
+      _parse_format_string( $self->{destination}->{expanded_format} );
 
+    $self->_crosscheck
+      ;    # Does the input data supply everything for necessary for the output.
+    $self->_regexp;                 # Create regexp for matching.
+    $self->_transform_functions;    # Create functions for mapping.
 
-
-
-
-
-
-
+}    # END SUBROUTINE: _initialize
 
 ## SUBROUTINE: transform
 ##	Transforms the supplied date.
 sub transform {
 
-	my $self  = shift;
-	my $input = shift;
+    my $self  = shift;
+    my $input = shift;
 
-	## Set Defaults.
-	## my @array = $self->{filter}->{input}->Values;
+    ## Set Defaults.
+    ## my @array = $self->{filter}->{input}->Values;
 
-	## $matches will hold the values from the matched regular expression.	
-	my $matches = Tie::IxHash->new();
+    ## $matches will hold the values from the matched regular expression.
+    my $matches = Tie::IxHash->new();
 
-	
-	## SHOULD WE DO A  CASE INSENSITIVE MATCH -- Default: Yes.
+    ## SHOULD WE DO A  CASE INSENSITIVE MATCH -- Default: Yes.
 
-	if ( $input =~ /$self->{filter}->{regexp}/i ) {
-	
-	## TEMPORARILY DISABLE strict 'refs' SO THAT WE CAN USE $$n.
-		no strict 'refs'; 
+    if ( $input =~ /$self->{filter}->{regexp}/i ) {
 
-		## Create Values from RegularExpression to Store in Cache.
-		## Foreach of the input formats,
-		##	name => value from regexp
+        ## TEMPORARILY DISABLE strict 'refs' SO THAT WE CAN USE $$n.
+        no strict 'refs';
 
+        ## Create Values from RegularExpression to Store in Cache.
+        ## Foreach of the input formats,
+        ##	name => value from regexp
 
-	## THIS IS THE SECOND MOST LIMITING STEP @ 1100/sec
-		foreach ( $self->{source}->{formats}->Keys ) {
-			$matches->Push( $_, ${ $self->{source}->{formats}->IndexFromKey($_) + 1} );
-		}
-	
-   ## REENABLE strict
-		use strict 'refs';
+        ## THIS IS THE SECOND MOST LIMITING STEP @ 1100/sec
+        foreach ( $self->{source}->{formats}->Keys ) {
+            $matches->Push( $_,
+                ${ $self->{source}->{formats}->IndexFromKey($_) + 1 } );
+        }
 
-	## SET matches to object.
-		$self->{filter}->{matches} = $matches;
+        ## REENABLE strict
+        use strict 'refs';
 
+        ## SET matches to object.
+        $self->{filter}->{matches} = $matches;
 
-	## PERFORM EACH OF THE TRANSFORMATIONS
-	## THIS IS THE TIME LIMITING STEP @ 900/sec
-		foreach my $transformation ( @{ $self->{filter}->{transformations} } ) {
-			$self->$transformation;
-		}
+        ## PERFORM EACH OF THE TRANSFORMATIONS
+        ## THIS IS THE TIME LIMITING STEP @ 900/sec
+        foreach my $transformation ( @{ $self->{filter}->{transformations} } ) {
+            $self->$transformation;
+        }
 
-	} else {
-		carp("No date matched input string, \"$input\".\nUsing Regular Expression: ", $self->{filter}->{regexp}, ".\n");
-	}
+    }
+    else {
+        carp(
+"No date matched input string, \"$input\".\nUsing Regular Expression: ",
+            $self->{filter}->{regexp}, ".\n"
+        );
+    }
 
+    return POSIX::strftime( $self->{filter}->{input}->Values );
 
-	return POSIX::strftime( $self->{filter}->{input}->Values );
-
-} # END SUBROUTINE: transform
-
+}    # END SUBROUTINE: transform
 
 ## SUBROUTINE: _transform_functions
 ## 	Creates and stores the closures to be used in the transformation
 sub _transform_functions {
 
-	my $self 		= shift;
-	
-	my $required 	= $self->{filter}->{requirements};
-	my $supplied 	= $self->{source}->{formats};
-	my $filter	 	= $self->{filter}->{input};
-	my $transformations = $self->{filter}->{transformations};
+    my $self = shift;
 
+    my $required        = $self->{filter}->{requirements};
+    my $supplied        = $self->{source}->{formats};
+    my $filter          = $self->{filter}->{input};
+    my $transformations = $self->{filter}->{transformations};
 
-	## 1. SECONDS
-	if ( exists $required->{'S'} ) {
-		# Generate second code.
+    ## 1. SECONDS
+    if ( exists $required->{'S'} ) {
 
-		if ( $supplied->EXISTS('S') ) {
-			
-			my $f1 = mk_passthru( 'S' );
-			my $function = mk_set_filter_input( 'S', $f1 );
-		
-			push( @{ $self->{filter}->{transformations} }, $function );
+        # Generate second code.
 
-		} else {
-			
-			# SET DEFAULTS
+        if ( $supplied->EXISTS('S') ) {
 
-		}
-		
- 
-	} 
+            my $f1       = mk_passthru('S');
+            my $function = mk_set_filter_input( 'S', $f1 );
 
+            push ( @{ $self->{filter}->{transformations} }, $function );
 
-	## 2. MINUTES 
-	if ( $required->{'M'} ) {
-		
-		if ( $supplied->EXISTS('M') ) {
-		
-			my $f1 = mk_passthru( 'M' );
-			my $function = mk_set_filter_input( 'M', $f1 );
+        }
+        else {
 
-			push( @{ $self->{filter}->{transformations} }, $function );
-	
-		}
+            # SET DEFAULTS
 
-	}
-	
+        }
 
-	## 3. HOURS
-	if ( exists $required->{'H'} ) {
+    }
 
-		my $function;
-		
-		if ( $supplied->EXISTS('H') ) {
+    ## 2. MINUTES
+    if ( $required->{'M'} ) {
 
-			my $f1 = mk_passthru( 'H' );
-			$function = mk_set_filter_input( 'H', $f1 );
-				
+        if ( $supplied->EXISTS('M') ) {
 
-		} 	elsif ( $supplied->EXISTS('k') ) {
+            my $f1       = mk_passthru('M');
+            my $function = mk_set_filter_input( 'M', $f1 );
 
-			my $f1 = mk_passthru( 'k' );
-			$function = mk_set_filter_input( 'H', $f1 );
-		
-		}	elsif ( $supplied->EXISTS('i') and $supplied->EXISTS('p') ) {
+            push ( @{ $self->{filter}->{transformations} }, $function );
 
-				my $f = \&iI_p_to_strftime_H;
-				my $f1 = mk_function( $f, 'i', 'p' );
-				$function = mk_set_filter_input( 'H', $f1 );
-				
-				#= '$self->{filter}->{input}->[3] = $'	. $supplied->IndexFromKey('H');
-				#$function = '$self->{filter}->{input}->[3] = $'	. $supplied->IndexFromKey('H') . ' + 12' if ($ 0);
+        }
 
-		}
-				
-		push( @{ $self->{filter}->{transformations} }, $function );	
-	}
+    }
 
+    ## 3. HOURS
+    if ( exists $required->{'H'} ) {
 
-	## 4. MONTHDAY
-	if ( exists $required->{'d'} ) {
+        my $function;
 
-		my $function;
-		
-		if ( $supplied->EXISTS('d') ) {
+        if ( $supplied->EXISTS('H') ) {
 
-			my $f1 = mk_passthru( 'd' );
-			$function = mk_set_filter_input( 'd', $f1 );
+            my $f1 = mk_passthru('H');
+            $function = mk_set_filter_input( 'H', $f1 );
 
-			
-		} elsif ( $supplied->EXISTS('e') ) {
+        }
+        elsif ( $supplied->EXISTS('k') ) {
 
-			my $f1 = mk_passthru( 'e' );
-			$function = mk_set_filter_input( 'd', $f1 );
+            my $f1 = mk_passthru('k');
+            $function = mk_set_filter_input( 'H', $f1 );
 
-		}
+        }
+        elsif ( $supplied->EXISTS('i') and $supplied->EXISTS('p') ) {
 
-		push( @{ $self->{filter}->{transformations} }, $function );
-		
-	}
-	
+            my $f = \&iI_p_to_strftime_H;
+            my $f1 = mk_function( $f, 'i', 'p' );
+            $function = mk_set_filter_input( 'H', $f1 );
 
+#= '$self->{filter}->{input}->[3] = $'	. $supplied->IndexFromKey('H');
+#$function = '$self->{filter}->{input}->[3] = $'	. $supplied->IndexFromKey('H') . ' + 12' if ($ 0);
 
-	## 5. MONTH
-	if ( exists $required->{'m'} ) {
+        }
 
-		my $function;
-		
-		if ( $supplied->EXISTS('m') ) {
+        push ( @{ $self->{filter}->{transformations} }, $function );
+    }
 
-			my $f = \&m_to_strftime_m;
-			my $f1 = mk_function( $f, 'm' ); 
-			$function = mk_set_filter_input( 'm', $f1 );			
+    ## 4. MONTHDAY
+    if ( exists $required->{'d'} ) {
 
-		} elsif ( $supplied->EXISTS('f') ) {
+        my $function;
 
-			my $f = \&m_to_strftime_m;
-			my $f1 = mk_function( $f, 'f' ); 
-			$function = mk_set_filter_input( 'm', $f1 );
+        if ( $supplied->EXISTS('d') ) {
 
-		} elsif ( $supplied->EXISTS('b') ) {
+            my $f1 = mk_passthru('d');
+            $function = mk_set_filter_input( 'd', $f1 );
 
-			my $f = \&bh_to_strftime_m;
-			my $f1 = mk_function( $f, 'b');
-			$function = mk_set_filter_input( 'm', $f1 );
+        }
+        elsif ( $supplied->EXISTS('e') ) {
 
-		} elsif( $supplied->EXISTS('h') ) {
+            my $f1 = mk_passthru('e');
+            $function = mk_set_filter_input( 'd', $f1 );
 
-			my $f = \&bh_to_strftime_m;
-			my $f1 = mk_function( $f, 'h' );
-			$function = mk_set_filter_input( 'm', $f1);
+        }
 
-		} elsif ( $supplied->EXISTS('B') ) {
+        push ( @{ $self->{filter}->{transformations} }, $function );
 
-			my $f = \&B_to_strftime_m;
-			my $f1 = mk_function( $f, 'B' );
-			$function = mk_set_filter_input( 'm', $f1 );
+    }
 
-		}			
+    ## 5. MONTH
+    if ( exists $required->{'m'} ) {
 
-		push( @{ $self->{filter}->{transformations} }, $function );
+        my $function;
 
-	}
+        if ( $supplied->EXISTS('m') ) {
 
+            my $f = \&m_to_strftime_m;
+            my $f1 = mk_function( $f, 'm' );
+            $function = mk_set_filter_input( 'm', $f1 );
 
-	## 6. YEAR
-	if ( exists $required->{'Y'} ) {
+        }
+        elsif ( $supplied->EXISTS('f') ) {
 
-		my $function;
-		
-		if ( $supplied->EXISTS('y') ) {
+            my $f = \&m_to_strftime_m;
+            my $f1 = mk_function( $f, 'f' );
+            $function = mk_set_filter_input( 'm', $f1 );
 
-			my $f1 = mk_passthru( 'y' );
-			$function = mk_set_filter_input( 'y', $f1 );			
+        }
+        elsif ( $supplied->EXISTS('b') ) {
 
-		} elsif ( $supplied->EXISTS('Y') ) {
+            my $f = \&bh_to_strftime_m;
+            my $f1 = mk_function( $f, 'b' );
+            $function = mk_set_filter_input( 'm', $f1 );
 
-			my $f = \&Y_to_strftime_y;
-			my $f1 = mk_function( $f, 'Y');
-			$function = mk_set_filter_input( 'y', $f1 );
-		}
-		
-		push( @{ $self->{filter}->{transformations} }, $function );	
+        }
+        elsif ( $supplied->EXISTS('h') ) {
 
-	}
+            my $f = \&bh_to_strftime_m;
+            my $f1 = mk_function( $f, 'h' );
+            $function = mk_set_filter_input( 'm', $f1 );
 
-	## 6. Wday
-	## 7. Yearday
-	## 8. ISDST is daylight savings time.
-	
-	return 1;
+        }
+        elsif ( $supplied->EXISTS('B') ) {
+
+            my $f = \&B_to_strftime_m;
+            my $f1 = mk_function( $f, 'B' );
+            $function = mk_set_filter_input( 'm', $f1 );
+
+        }
+
+        push ( @{ $self->{filter}->{transformations} }, $function );
+
+    }
+
+    ## 6. YEAR
+    if ( exists $required->{'Y'} ) {
+
+        my $function;
+
+        if ( $supplied->EXISTS('y') ) {
+
+            my $f1 = mk_passthru('y');
+            $function = mk_set_filter_input( 'y', $f1 );
+
+        }
+        elsif ( $supplied->EXISTS('Y') ) {
+
+            my $f = \&Y_to_strftime_y;
+            my $f1 = mk_function( $f, 'Y' );
+            $function = mk_set_filter_input( 'y', $f1 );
+        }
+
+        push ( @{ $self->{filter}->{transformations} }, $function );
+
+    }
+
+    ## 6. Wday
+    ## 7. Yearday
+    ## 8. ISDST is daylight savings time.
+
+    return 1;
 
 }
-
-
 
 ## SUBROUTINE: _regexp
 ## 	Creates the regexp used in the transformation
 sub _regexp {
 
-	# Converts input format into regular expression format.
-	my $self = shift;
-	
-	my $regexp = $self->{source}->{expanded_format};
-	
-	# Replace Special Characters
-	$regexp =~ s/\%n/\\n/g;
-	$regexp =~ s/\%t/\\t/g;
-	$regexp =~ s/\%\%/\\%/g;
-	$regexp =~ s/\%\+/\\+/g;
+    # Converts input format into regular expression format.
+    my $self = shift;
 
-	
-	foreach ( $self->{source}->{formats}->Keys ) {
-		my $re_replacement = "(" . &_re($_) . ")" ;
-		$regexp =~ s/\%($_)/$re_replacement/eg;
-	}
+    my $regexp = $self->{source}->{expanded_format};
 
-	$self->{filter}->{regexp} = $regexp;
+    # Replace Special Characters
+    $regexp =~ s/\%n/\\n/g;
+    $regexp =~ s/\%t/\\t/g;
+    $regexp =~ s/\%\%/\\%/g;
+    $regexp =~ s/\%\+/\\+/g;
 
-	# return $regexp;
-	
-} # END SUBROUTINE: _regexp
+    foreach ( $self->{source}->{formats}->Keys ) {
+        my $re_replacement = "(" . &_re($_) . ")";
+        $regexp =~ s/\%($_)/$re_replacement/eg;
+    }
 
+    $self->{filter}->{regexp} = $regexp;
 
+    # return $regexp;
+
+}    # END SUBROUTINE: _regexp
 
 ## SUBROUTINE: _crosscheck
 ## 	ensures that the input string supplies all the necessary information
 ## 	for the requested output. Requires some complex logic (not implemented yet.)
 sub _crosscheck {
 
-	# Checks to see if the necessary data elements the input_format supplies enough data.
+# Checks to see if the necessary data elements the input_format supplies enough data.
 
-	my $self = shift;
+    my $self = shift;
 
-	# my %strftime_requirements;
-	# my @req;
-	
-	# What are the output requirements.
-	my %or = _strftime_requirements( $self->{destination}->{formats}->Keys );
-	$self->{filter}->{requirements} =  \%or;
+    # my %strftime_requirements;
+    # my @req;
 
-	
-	# What are the input supplied.
-	my %is = _strftime_requirements( $self->{source}->{formats}->Keys );
-	# $self->{source}->{supplied} = \%is;
+    # What are the output requirements.
+    my %or = _strftime_requirements( $self->{destination}->{formats}->Keys );
+    $self->{filter}->{requirements} = \%or;
 
-	# Crosscheck outputs requested vs inputs supplied.
-	#my %is = map { $_ => 1 } @is;
-	
-	foreach my $or (sort keys %or) {
-	 
-		if ( !$is{$or} ) {
-			carp "WARNING: %$or is required by the output, but not supplied by the input.\n";
-			# die("\n") unless ( $is{$or} );
-		}
-	
-	}
-	
+    # What are the input supplied.
+    my %is = _strftime_requirements( $self->{source}->{formats}->Keys );
+
+    # $self->{source}->{supplied} = \%is;
+
+    # Crosscheck outputs requested vs inputs supplied.
+    #my %is = map { $_ => 1 } @is;
+
+    foreach my $or ( sort keys %or ) {
+
+        if ( !$is{$or} ) {
+            carp
+"WARNING: %$or is required by the output, but not supplied by the input.\n";
+
+            # die("\n") unless ( $is{$or} );
+        }
+
+    }
+
 }
-
-
 
 ## SUBROUTINE: _parse_format_string
 ##	Given a date string => href of elements in the string, aref of order of elements
@@ -410,51 +403,47 @@ sub _crosscheck {
 ##		appears more than once, the REAL first occurence will be captured.
 sub _parse_format_string {
 
-	# Format String => href Elements in Sting, aref order of elements
+    # Format String => href Elements in Sting, aref order of elements
 
-	my $format = shift;
-	my $index = 0;
-	
-	my $ixhash_obj = Tie::IxHash->new();
-	
-	$format = reverse($format);  # REVERSE THE ORDER OF FORMAT.
-	
-	# my $elements;
-	# my $order;
+    my $format = shift;
+    my $index  = 0;
 
-	my ($r1, $r2);
+    my $ixhash_obj = Tie::IxHash->new();
 
-	$r1 = chop($format);
+    $format = reverse($format);    # REVERSE THE ORDER OF FORMAT.
 
-	while ($format) {
+    # my $elements;
+    # my $order;
 
-		$r2 = $r1 ;
-		$r1 = chop($format);
+    my ( $r1, $r2 );
 
-		# Test for format field.
-		if ( $r2 eq '%' ) {
+    $r1 = chop($format);
 
-	    	# $elements->{$r1} =  undef;  # These will become storage recepticles later.
-			# push @{$order}, $r1;
+    while ($format) {
 
-			# Since date information might appear twice in the string, we only want to take the first instance.			
-			# next if ( $ixhash_obj->[0]->{$r1} );
-			# Make sure to put the new formats at the front of object.
-			$ixhash_obj->Push( $r1 => $index ); 
-			$r1 = chop($format);
+        $r2 = $r1;
+        $r1 = chop($format);
 
-			$index++;
-		}
-						
-	}
+        # Test for format field.
+        if ( $r2 eq '%' ) {
 
-	return $ixhash_obj;
+    # $elements->{$r1} =  undef;  # These will become storage recepticles later.
+    # push @{$order}, $r1;
 
-} 
+# Since date information might appear twice in the string, we only want to take the first instance.
+# next if ( $ixhash_obj->[0]->{$r1} );
+# Make sure to put the new formats at the front of object.
+            $ixhash_obj->Push( $r1 => $index );
+            $r1 = chop($format);
 
+            $index++;
+        }
 
+    }
 
+    return $ixhash_obj;
 
+}
 
 ########################
 
@@ -462,71 +451,69 @@ sub _parse_format_string {
 ## 	Expands compound formats to full formats.
 sub _expand_compound_formats {
 
-	my $format = shift;
-	my ($expansion, $new_format);
+    my $format = shift;
+    my ( $expansion, $new_format );
 
-	$format = reverse $format;
-	
-	my ($r1, $r2);
-	$r1 = chop $format;
+    $format = reverse $format;
 
-	while ($format) {
+    my ( $r1, $r2 );
+    $r1 = chop $format;
 
-		$r2 = $r1 ;
-		$r1 = chop($format);
+    while ($format) {
 
-		my $expansion;
+        $r2 = $r1;
+        $r1 = chop($format);
 
-		# Test for format field.
-		if ( $r2 eq '%' ) {
- 
-			given ($r1) {
+        my $expansion;
 
-				# COMPUND FORMATS
+        # Test for format field.
+        if ( $r2 eq '%' ) {
 
-				when ["T","X"]	{ $expansion = "%H:%M:%S"; }
-				when "c"			{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-				when ["C","u"]	{ $expansion = "%a %b %e %H:%M:%S %z %Y"; }
-				when "g"			{ $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
-				when ["D","x"]	{ $expansion = "%m/%d/%y"; }
-			
-				when "r"		{ $expansion = "%I:%M:%S %p"; }
-				when "R"		{ $expansion = "%H:%M"; }
-				when "V"		{ $expansion = "%m%d%H%M%y"; }
-				when "Q"		{ $expansion = "%Y%m%d"; }
-				when "q"		{ $expansion = "%Y%m%d%H%M%S"; }
-				when "P"		{ $expansion = "%Y%m%d%H:%M:%S"; }
-				when "F"		{ $expansion = "%A, %B %e, %Y"; }	
-				when "J"		{ $expansion = "%G-%W-%w"; }
-				when "K"		{ $expansion = "%Y-%j";   }
+            given($r1) {
 
-				# when ""	{ $re = '' } # MORE.
-				# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
-			 	# Omitted for now, but logic can be included to solve the problem.
-			
-				# Don't expand non compound factors
-				else { $expansion .= $r2 . $r1; }
+                # COMPUND FORMATS
 
-			}	# End SWITCH		
-			
-			$r1 = chop($format);			
-		
-		} else {
-	    	
-			$expansion = $r2;
+                when [ "T", "X" ] { $expansion = "%H:%M:%S"; }
+                when "c" { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when [ "C", "u" ] { $expansion = "%a %b %e %H:%M:%S %z %Y"; }
+                when "g" { $expansion = "%a, %d %b %Y %H:%M:%S %z"; }
+                when [ "D", "x" ] { $expansion = "%m/%d/%y"; }
 
-		} # END if
+                when "r" { $expansion = "%I:%M:%S %p"; }
+                when "R" { $expansion = "%H:%M"; }
+                when "V" { $expansion = "%m%d%H%M%y"; }
+                when "Q" { $expansion = "%Y%m%d"; }
+                when "q" { $expansion = "%Y%m%d%H%M%S"; }
+                when "P" { $expansion = "%Y%m%d%H:%M:%S"; }
+                when "F" { $expansion = "%A, %B %e, %Y"; }
+                when "J" { $expansion = "%G-%W-%w"; }
+                when "K" { $expansion = "%Y-%j"; }
 
-		$new_format .= $expansion;
+# when ""	{ $re = '' } # MORE.
+# when "l"	{ $re = "[" . join( ' ', _re(b,e,R) ) . '|' . join( ' ', _re(b,e,Y) ) . "]" }
+# Omitted for now, but logic can be included to solve the problem.
 
-	} # END format WHILE
+                # Don't expand non compound factors
+                else { $expansion .= $r2 . $r1; }
 
-	return $new_format;
+            }    # End SWITCH
+
+            $r1 = chop($format);
+
+        }
+        else {
+
+            $expansion = $r2;
+
+        }    # END if
+
+        $new_format .= $expansion;
+
+    }    # END format WHILE
+
+    return $new_format;
 
 }
-
-
-
 
 ## SUBROUTINE: _strftime_requirements
 ##	Given a series of formats that are requested,
@@ -534,113 +521,112 @@ sub _expand_compound_formats {
 ##	strftime to suppy those requirements.
 sub _strftime_requirements {
 
-	# OUTPUT REQUIREMENTS
-	# my $format;
-	my @formats = @_;
-	my @req;
+    # OUTPUT REQUIREMENTS
+    # my $format;
+    my @formats = @_;
+    my @req;
 
-	foreach  my $format (@formats) {
-	
-		given ($format) {
+    foreach my $format (@formats) {
 
-			# Year
-			when ["Y","y","G","L"]			{ push(@req, 'Y'); }
-					
-			# Month
-			when ["m","f","b","h","B"] 	{ push(@req, 'm'); }
+        given($format) {
 
-			# Week/Day of the year, Day of the week
-			when ["U","W","j","v","a","A","w"]	{ push(@req, 'Y', 'm', 'd'); }
+            # Year
+            when [ "Y", "y", "G", "L" ] { push ( @req, 'Y' ); }
 
-			# Day of the Month
-			when ["d","e","E"]				{ push(@req, 'd'); }
-	
-			# Hour
-			when ["H","k","i","l","p"]		{ push(@req, 'H'); }
-	
-			# Minute
-			when ["M"]							{ push(@req, 'M');}
+            # Month
+            when [ "m", "f", "b", "h", "B" ] { push ( @req, 'm' ); }
 
-			# Second
-			when ["S"]							{ push(@req, 'S'); }
+            # Week/Day of the year, Day of the week
+            when [ "U", "W", "j", "v", "a", "A", "w" ] {
+                push ( @req, 'Y', 'm', 'd' );
+            }
 
-		} # END SWITCH BLOCK
-		
-	} # END @formats LOOP
+            # Day of the Month
+            when [ "d", "e", "E" ] { push ( @req, 'd' ); }
 
-	# Remove duplicates from requirements 
-	my %req = map { $_ => 1 } @req;	
+            # Hour
+            when [ "H", "k", "i", "l", "p" ] { push ( @req, 'H' ); }
 
-	return %req;    # return (keys(%req));
+            # Minute
+            when ["M"] { push ( @req, 'M' ); }
+
+            # Second
+            when ["S"] { push ( @req, 'S' ); }
+
+        }    # END SWITCH BLOCK
+
+    }    # END @formats LOOP
+
+    # Remove duplicates from requirements
+    my %req = map { $_ => 1 } @req;
+
+    return %req;    # return (keys(%req));
 
 }
 
-
 sub _re {
-	
-	# Generate regular expression for the given format(s)
-	# In general the regular expressions should be
-	# restrictive and fast.
-	#
-	
-	my $format = shift;
-	# my $regexp;
 
-	my $re; 
+    # Generate regular expression for the given format(s)
+    # In general the regular expressions should be
+    # restrictive and fast.
+    #
 
-		given ($format) {
+    my $format = shift;
 
-			# YEAR
-			when "y" { $re = '\d{2}'; }
-			when ["Y","G","L"] { $re = '\d{4}'; }
+    # my $regexp;
 
-			#Month
-			when "m" 	{ $re = '[01]\d'; }
-			when "f" 	{ $re = '\d{1}|1[0-2]'; }
-			when ["b","h"] 	{ $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'; }
-			when "B" 	{ $re = 'January|February|March|April|May|June|July|August|September|October|November|December'; }
-			when ["U","W"] 	{ $re = '[0-5]\d'; }
+    my $re;
 
-			# Day
-			when "j" 	{ $re = '[0-3]\d{2}'; }
-			when "d"	{ $re = '[0-3]\d'; }
-			when "e" 	{ $re = '[ |0|1|2|3]\d'; }
-			when "v" 	{ $re = ' S| M| T| W|Th|F|Sa'; }
-			when "a"	{ $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
-			when "A" 	{ $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday'; }
-			when "w" 	{ $re = '1-7'; }
-			when "E" 	{ $re = '\d{1,2}st|nd|rd|th'; }
+    given($format) {
 
-			# Hours
-			when "H" 	{ $re = '[0-2]\d'; }
-			when "k" 	{ $re = '[ 12]\d'; }
-			when "i" 	{ $re = '[ 1]\d'; }
-			when "I"	{ $re = '[01]\d' }
-			when "p"	{ $re = 'AM|PM'; }
+        # YEAR
+        when "y" { $re = '\d{2}'; }
+        when [ "Y", "G", "L" ] { $re = '\d{4}'; }
 
-			when ["M","S"]	{ $re = '[0-6]\d'; }
+        #Month
+        when "m" { $re = '[01]\d'; }
+        when "f" { $re = '\d{1}|1[0-2]'; }
+        when [ "b", "h" ] {
+            $re = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+        }
+        when "B" {
+            $re =
+'January|February|March|April|May|June|July|August|September|October|November|December';
+        }
+        when [ "U", "W" ] { $re = '[0-5]\d'; }
 
-			else { carp "No Regular Expression found for POSIX format -- $format";  }
+        # Day
+        when "j" { $re = '[0-3]\d{2}'; }
+        when "d" { $re = '[0-3]\d'; }
+        when "e" { $re = '[ |0|1|2|3]\d'; }
+        when "v" { $re = ' S| M| T| W|Th|F|Sa'; }
+        when "a" { $re = 'Sun|Mon|Tue|Wed|Thu|Fri|Sat'; }
+        when "A" {
+            $re = 'Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday';
+        }
+        when "w" { $re = '1-7'; }
+        when "E" { $re = '\d{1,2}st|nd|rd|th'; }
 
-		} # END case BLOCK
+        # Hours
+        when "H" { $re = '[0-2]\d'; }
+        when "k" { $re = '[ 12]\d'; }
+        when "i" { $re = '[ 1]\d'; }
+        when "I" { $re = '[01]\d' }
+        when "p" { $re = 'AM|PM'; }
 
+        when [ "M", "S" ] { $re = '[0-6]\d'; }
 
-	return $re
+        else { carp "No Regular Expression found for POSIX format -- $format"; }
 
-} # END SUBROUTINE _re
+    }    # END case BLOCK
 
+    return $re
 
-
-
-
-
-
+}    # END SUBROUTINE _re
 
 # Autoload methods go after =cut, and are processed by the autosplit program.
 
 1;
-
-
 
 __END__;
 
@@ -648,103 +634,104 @@ __END__;
 
 =head1 NAME
 
-Date::Transform - Transform the format of dates.
+Date::Transform - Efficiently transform between date formats.
 
 =head1 SYNOPSIS
 
   use Date::Transform;
   
-  my $dt = new Date::Transform( 
-		i<input_format>,
-		i<output_format>
+  $input_format 	= '%x';        # e.g. 01/01/2001
+  $output_format 	= '%b %d, %Y'; # e.g. January 1, 2001 
+  
+  $dt = new Date::Transform( 
+		$input_format,
+		$output_format
   )
 
-  i<$output_string_1>  = $dt->transform(i<input_string_1>);
-  i<$output_string_2>  = $dt->transform(i<input_string_2>);
-  i<$output_string_3>  = $dt->transform(i<input_string_3>);
+  $input_1   = '04/15/2001';  
+  $input_2   = '10/31/2001';
 
-  ...
+  $output_1  = $dt->transform($input_1); # Apr 15, 2001	
+  $output_2  = $dt->transform($input_2); # Oct 31, 2001
 
-  
+
 =head1 DESCRIPTION
 
-Sullivan Beck's excelllent Date::Manip it a superlative module for performing a vast
-number of operations involving dates.  However, because of its extraordinary 
-flexibility it is slow in operations where much date parsing is needed.  
+Sullivan Beck's excelllent Date::Manip it a superlative module for performing 
+operations involving dates.  However, because of its extraordinary 
+flexibility it is slow when much date parsing is needed.  
 
-I found that more than 95% of my operations using dates required a simple transfor
-mation from one format to another, i.e. going from YYYY-mm-dd to mm/dd/YYYY.
-While Date::Manip's UnixDate function can do this, its flexibility means slower
-operations.  The algorithm can be greatly accelerated when the input date has a
-specific format.  Date::Transform does this.  When the input format is known,
-Date::Transform creates a customized routine maximized for the specific
-transformation.
+I found that more than 95% of my operations using dates required repeated 
+transformations, e.g. going from YYYY-mm-dd to mm/dd/YYYY.  While Date::Manip's 
+UnixDate function can do this, its flexibility means slower operation.  
+
+When the input format is specified, the transformation can be greatly enhanced.
+Date::Transform provides this by creating a custom algorithm maximized for the 
+specific transformation.
 
 While a considerable initialization is required to derive the transformations, the
-transformations themselves see a 300-500% performance increase over
+transformations themselves show a 300-500% performance increase over
 Date::Manip.  
-
-Formats supported:
-%[aAbBcdHIjmMpSUwWxXyYZ] -- see POSIX::strftime()
-
 
 =head1 METHODS
 
-=head2 new( i<input_format>, i<output_format> )
+=head2 new
 
-	Create a new Date::Manip::Transform object.
-	input_format is treated as a Regular Expression.
+  new( $input_format, $output_format )
+ 
+  Creates a new Date::Manip::Transform object.
 
-=head2 transform( i<date> )
+  * $input_format is treated as a regular expression for matching the date to be transformed.  Thus
+    '%b %d, %Y'  would succesfully transform the string, 'I came to California on Oct 15, 1992'.
 
-  Transforms the supplied date according to the transformation rules of the 
-  Date::Transform object.
+  * See 'Supported Formats' for details on the supported format types.
 
-  a	weekday abbreviation                          Sun to Sat
-  A	Day of the Week                                  Monday
-  b	Month abbreviation                              Jan to Dec
-  B	Month of the Year                                January ... December
-  c	Compound time format                        e.g. Fri Apr 28 17:23:15 1995
-  d	Day of the Month,                                e.g. 15
-  H	Hour of the day                                    00-23
-  I		Hour of the day 								   01 to 12
-  j		Day of the year                                    0-365
-  m   month of year		                               01 to 12
-  M	Minute                                          	   00 to 59
-  p	AM or PM	                                           AM or PM
-  S	Second							                       00 to 59
-  U	Week of year, Sunday as first day	       01 to 53
-  w	Day of week                                        1 (Monday) to 7 (Sunday)
-  W	week of year, Monday as first day	       01 to 53
-  x	Compound format							   e.g. 04/28/95
-  X	Time	                                                   e.g. 03:30:01 AM
-  Y	Year	                                                   e.g. 2002
-  Z	Time Zone	                                       e.g. Pacific Daylight Time
+  * All formats must be proceeded by '%'.
+
+=head2 transform
+
+  transform( $date )
+
+  Returns a scalar of the supplied date in the format specified by the at object creation.
+
+
+=head1 SUPPORTED FORMATS
+
+  a	weekday abbreviation                  Sun to Sat
+  A	Day of the Week                       Monday
+  b	Month abbreviation                    Jan to Dec
+  B	Month of the Year                     January ... December
+  c	Compound time format                  e.g. Fri Apr 28 17:23:15 1995
+  d	Day of the Month,                     e.g. 15
+  H	Hour of the day                       00-23
+  I	Hour of the day                       01 to 12
+  j	Day of the year                       0-365
+  m	month of year                         01 to 12
+  M	Minute                                00 to 59
+  p	AM or PM                              AM or PM
+  S	Second                                00 to 59
+  U	Week of year, Sunday as first day     01 to 53
+  w	Day of week                           1 (Monday) to 7 (Sunday)
+  W	Week of year, Monday as first day     01 to 53
+  x	Compound format                       e.g. 04/28/95
+  X	Time                                  e.g. 03:30:01 AM
+  Y	Year                                  e.g. 2002
+  Z	Time Zone                             e.g. Pacific Daylight Time
 
 =head1 NOTES
 
-  I would be happy to have this incorporated directly into Sullivan Beck's Date::Manip module.
-  
-=head2 Object Model
+I would be happy to have this incorporated directly into Sullivan Beck's Date::Manip module.
 
-	transform
-	+ source
-	+ filter
-	+ destination
-
-=head2 HOW TO EXPAND
-
-
-=head2 EXPORT
+=head1 EXPORT
 
 None by default.
 
-=head2 TODO
+=head1 TODO
 
-  Speed transformation where a rearrangement of numbers is the only thing necessary
-  Implement a default using user parameters or localtime()
-  Multiple language support.
-  Incoporate %l format.
+  + Speed transformation where a rearrangement of numbers is the only thing necessary
+  + Implement a default using user parameters or localtime()
+  + Multiple language support.
+  + Incoporate %l format.
 
 =head1 AUTHOR
 
@@ -752,9 +739,13 @@ Christopher Brown, E<lt>chris.brown@cal.berkeley.eduE<gt>
 
 =head1 SEE ALSO
 
-L<perl>, L<Date::Manip>, L<Switch>, L<Posix::strftime>
+L<perl>, 
+L<Date::Manip>, 
+L<Switch>, 
+L<Posix::strftime>
 
 =head1 COPYRIGHT
 
-Copyright Christopher T. Brown 2003.
+Copyright (c) 2003 Christopher T. Brown.
+
 =cut

@@ -1,6 +1,4 @@
 package Date::Transform::Extensions;
-## SHOULD THIS BE ITS OWN PACKAGE SPACE?
-## No.
 
 use 5.008;
 use strict;
@@ -20,13 +18,17 @@ our @ISA = qw( Exporter );
 # This allows declaration	use Date::Manip::Transform ':all';
 # If you do not need this, moving things directly into @EXPORT or @EXPORT_OK
 # will save memory.
-our %EXPORT_TAGS = ( 'all' => [ qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex ) ] );
+our %EXPORT_TAGS = (
+    'all' => [
+        qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex )
+    ]
+);
 our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 
-our @EXPORT = qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex);
+our @EXPORT =
+  qw( Tie::IxHash::IndexFromKey  Tie::IxHash::KeyFromIndex  Tie::IxHash::ValueFromIndex);
 
 our $VERSION = '0.05';
-
 
 # Preloaded methods go here.
 
@@ -35,45 +37,39 @@ our $VERSION = '0.05';
 ## Returns the index(position) of the key ,$key
 sub Tie::IxHash::IndexFromKey {
 
-	my $self = shift;
-	my $key = shift;
+    my $self = shift;
+    my $key  = shift;
 
-	my @indices = $self->Indices( $key );
+    my @indices = $self->Indices($key);
 
-	return $indices[0];	
+    return $indices[0];
 
-} # END SUBROUTINE: Tie::IxHash::Index
-
-
+}    # END SUBROUTINE: Tie::IxHash::Index
 
 ## SUBROUTINE: Tie::IxHash::KeyFromIndex
 ## Usage: $ixhash_obj->KeyFromIndex( $Index ) = $key
-## 
+##
 sub Tie::IxHash::KeyFromIndex {
 
-	my $self 	= shift;
-	my $index 	= shift;
+    my $self  = shift;
+    my $index = shift;
 
-	return $self->[1]->[$index];	
+    return $self->[1]->[$index];
 
-} # END SUBROUTINE: tie::IxHash::KeyFromIndex
-
-
+}    # END SUBROUTINE: tie::IxHash::KeyFromIndex
 
 ## SUBROUTINE: Tie::IxHash::ValueFromIndex
 sub Tie::IxHash::ValueFromIndex {
 
-	my $self 	= shift;
-	my $index 	= shift;
+    my $self  = shift;
+    my $index = shift;
 
-	return $self->FETCH( $self->[1]->[$index] );	
+    return $self->FETCH( $self->[1]->[$index] );
 
-} # END SUBROUTINE: Tie::IxHash::ValueFromIndex
+}    # END SUBROUTINE: Tie::IxHash::ValueFromIndex
 
 ########
 
-
 1;
-
 
 __END__;
